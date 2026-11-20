@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import SiteShell from '../components/SiteShell';
 
 export const metadata = {
   title: 'Page not found',
@@ -7,6 +8,7 @@ export const metadata = {
 
 export default function NotFound() {
   return (
+    <SiteShell>
     <section className="nf-wrap">
       <div className="wrap">
         <div className="nf-inner">
@@ -30,5 +32,6 @@ export default function NotFound() {
         </div>
       </div>
     </section>
+    </SiteShell>
   );
 }

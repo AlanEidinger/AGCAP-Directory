@@ -243,3 +243,6 @@
   .spot-gallery { grid-template-columns: 1fr 1fr; }
   .q-section { padding: 24px 20px 26px; }
 }
+
+.ac-noimg{display:block;width:100%;height:100%;background:var(--paper-2)}
+a.feat-article:hover h2{color:var(--forest)}

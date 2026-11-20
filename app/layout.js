@@ -1,5 +1,3 @@
-import SiteHeader from '../components/SiteHeader';
-import SiteFooter from '../components/SiteFooter';
 import { SITE_URL, asset } from '../lib/config';
 
 import './styles/styles.css';
@@ -11,18 +9,14 @@ import './styles/legal.css';
 import './styles/flows.css';
 
 export const metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL('https://www.agrifarmcapital.com/directory'),
   title: {
     default: "AgriFarm Directory — California's Agricultural Expert Network",
     template: '%s | AgriFarm Directory',
   },
   description:
     'Find verified California agricultural professionals — land brokers, crop insurance, title & escrow, appraisers, and water-rights attorneys.',
-  openGraph: {
-    type: 'website',
-    siteName: 'AgriFarm Directory',
-    url: SITE_URL,
-  },
+  openGraph: { type: 'website', siteName: 'AgriFarm Directory', url: SITE_URL },
   twitter: { card: 'summary_large_image' },
   icons: { icon: asset('favicon.svg') },
 };
@@ -40,11 +34,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>
-        <SiteHeader />
-        {children}
-        <SiteFooter />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
