@@ -101,23 +101,178 @@ Routing at Cloudflare (step 3) specifically avoids touching that service.
 
 ```
 app/
-  layout.js          shared shell — header, footer, fonts, global CSS
+  layout.js          html/body, fonts, global CSS (no chrome)
   page.js            home
+  sitemap.js         generates /directory/sitemap.xml
+  not-found.js       404
+  about/ contact/ terms/ privacy/ disclaimer/
+  articles/          index + pricing-farmland-scarce-comps/
+  professionals/     index + marcela-ortiz/
+  spotlight/ spotlight-questionnaire/ get-listed/
+  get-matched/       4-step wizard (client)
+  sign-in/           redirects to account/login
+  account/           professional login, password setup, profile editor (noindex)
+  admin/             admin login and panel (noindex)
   styles/            ported stylesheets, imported once in layout
 components/
-  SiteHeader.js      utility bar, nav, mega-menu (client component)
-  SiteFooter.js      footer
+  SiteShell.js       header + footer wrapper for public pages
+  SiteHeader.js      utility bar, nav, mega-menu (client)
+  SiteFooter.js
 lib/
   config.js          BP prefix + asset() helper
 public/              images, favicon
 ```
 
-## Still to port
+### Why SiteShell instead of a route group
 
-Routes not yet built: `/professionals`, `/professionals/[slug]`, `/articles`,
-`/articles/[slug]`, `/about`, `/contact`, `/get-matched`, `/get-listed`,
-`/spotlight`, `/sign-in`, `/account/profile`, `/admin`, `/terms`, `/privacy`,
-`/disclaimer`, `not-found.js`.
+The dashboard routes (`sign-in`, `account/profile`, `admin`) render their own
+full-page shell and must not inherit the site header and footer. Rather than a
+`(site)` route group, the root layout stays chrome-free and public pages opt in
+by wrapping their content in `<SiteShell>`. Same result, one less directory
+convention to remember.
 
-Source HTML for each lives in the project root and ports directly — the CSS and
-markup are already final.
+### Dashboard interactivity
+
+The ported dashboards keep their original vanilla-JS behaviour, installed via
+`useEffect` against the same markup and IDs. This was deliberate: it preserves
+exact behaviour from the approved designs. When these pages become
+database-driven, convert them to React state at the same time.
+
+## Sample data
+
+Every professional, review count, and directory total is **placeholder content**.
+None of it can be published as a live directory. Replace with real, consenting,
+verified professionals before routing production traffic.
+
+The home page's featured-professionals grid is intentionally empty — it renders
+from the database once listings exist.
+
+## Lead forms → GoHighLevel
+
+All forms post to `POST /directory/api/lead` (`app/api/lead/route.js`), which
+validates, renames fields to the GHL keys, and forwards to a GHL Inbound Webhook.
+Webhook URLs are **Railway variables on this service only**, never in page code.
+
+| Railway variable | Receives |
+|---|---|
+| `GHL_WEBHOOK_LANDOWNER` | Get Matched, profile inquiry, Contact (landowner / other) |
+| `GHL_WEBHOOK_PRO` | Get Listed, Contact (ag professional) |
+| `GHL_WEBHOOK_FINANCE` | Mini-site forms (`finance_lead`) |
+| `GHL_WEBHOOK_SPOTLIGHT` | Spotlight questionnaire (not wired yet; needs file storage) |
+
+If a variable is missing the form shows an error rather than silently losing
+the lead, and the service log records `[lead] No webhook configured`.
+
+Every payload also carries `first_name`, `last_name`, `full_name`, `submitted_at`.
+Field-name mapping lives at the top of `route.js` and mirrors `ghl-keys.md`.
+Spam protection: hidden honeypot field + 8 submissions/minute per IP.
+
+## Professional listings
+
+Listings come from `lib/professionals.json`, generated from the candidate CSVs:
+
+```
+node scripts/build-pros.mjs ../import
+```
+
+Re-run it after editing a CSV, then commit the updated JSON.
+
+- **Unclaimed** (`consent_received` = FALSE): public business info only, no Verified badge,
+  summary line generated from specialty + counties. Inquiries go to Alan via the landowner
+  webhook with `listing_slug` set. "Claim this listing" opens Get Listed prefilled;
+  "Request changes or removal" opens Contact tagged with the slug.
+- **Claimed** (`consent_received` = TRUE): Verified badge, sorted first.
+- **License line** shows "active · checked <date>" only when `license_status` is `active`
+  and `license_verified_date` is filled. Otherwise it links to the state lookup.
+- **Removing someone:** set `listing_status` to `removed`, re-run the script, deploy.
+- `marcela-ortiz` is a sample page, marked noindex and left out of the listing and sitemap.
+
+## Admin panel (`/directory/admin`)
+
+Alan signs in at `/directory/admin/login` with one password. From the panel he can:
+
+- **Review** new Get Listed applications and claim requests (Overview → Needs review)
+- **Approve, hide, remove, or delete** any listing
+- **Edit** every listing field, upload a photo or logo, and switch badges on
+  (Verified, License checked, Featured, Spotlight, Founding member, Accredited)
+- **Write, schedule, and publish articles** with a cover image, in a simple
+  Markdown editor with a preview tab
+
+### Railway variables (directory service)
+
+| Variable | What it is |
+|---|---|
+| `DATABASE_URL` | Neon connection string. Tables (`dir_listings`, `dir_articles`, `dir_media`) are created on first use, and the 99 researched listings are loaded automatically. |
+| `ADMIN_PASSWORD` | Alan's admin password. Use a long one. |
+| `SESSION_SECRET` | Optional. Any long random string; signs the login cookie. Changing it signs everyone out. |
+
+Without `DATABASE_URL` the public site keeps working from `lib/professionals.json`
+and the admin shows a warning instead of saving.
+
+**Once the database is live, edit listings in the admin, not the CSVs.** The CSV
+script only rebuilds the fallback file.
+
+- Uploaded images are stored in the database (3 MB cap) and served from `/directory/api/media/<id>`.
+- Get Listed submissions are saved as "Needs review" listings; claims attach to the existing listing.
+  They are still sent to GHL as well.
+- "Verified" shows on a listing only when it is both claimed and has the Verified badge.
+
+## Professional accounts (`/directory/account`)
+
+Each listing can have one login. Professionals can edit their name, company, title,
+phone, website, address, city, counties, photo, bio, specialties, services,
+credentials, photo gallery (up to 12), FAQ, video link, hours, languages, and
+which sections show. They **cannot** change status, badges, specialty category,
+or license details; those stay with the admin.
+
+**How a pro gets a login:** Admin → Listings → open the listing → *Professional login* →
+enter their email → *Create login invite*. If email is set up (below), the invite
+is emailed; otherwise copy the link shown and send it from GHL. The link works for
+7 days and lets them set a password. Setting it marks the listing as claimed.
+
+Edits go live immediately. The admin listing page shows when they last edited.
+To lock someone out, use *Turn off their login*.
+
+Optional email (invites and password resets) via Resend:
+
+| Variable | Example |
+|---|---|
+| `RESEND_API_KEY` | from resend.com |
+| `MAIL_FROM` | `AgriFarm Directory <listings@agrifarmcapital.com>` |
+
+Without these, "Forgot password" can't send anything; Alan sends a new invite link instead.
+
+### Self sign-up (v3)
+
+Professionals create their own account on **Get Listed** (email = username, password).
+
+- **New listing:** account is active right away; the listing is "Needs review" until Alan approves it.
+  Approving emails them "your listing is live".
+- **Claiming a listing** (Claim this listing → Get Listed?claim=slug): account is created but locked
+  ("pending claim") until either
+  - they confirm their email **and** it matches the listing's website domain (auto-approved), or
+  - Alan clicks **Approve claim** (emails them). **Dismiss** deletes their login.
+- **Email confirmation:** a link is emailed at sign-up; "Send the link again" is on their account page.
+- **Forgot password** emails a reset link (2 hours).
+- **Inquiries** from a listing are saved to `dir_inquiries`, shown on the pro's account page, and
+  emailed to the pro once their account is confirmed. They still go to GHL as before.
+- Header and footer have a "Pro sign in" link.
+
+**Email is required for this flow.** Set in Railway:
+
+| Variable | Value |
+|---|---|
+| `RESEND_API_KEY` | from resend.com (domain agrifarmcapital.com verified) |
+| `MAIL_FROM` | `AgriFarm Directory <listings@agrifarmcapital.com>` |
+| `ADMIN_NOTIFY_EMAIL` | where Alan gets sign-up and claim alerts |
+
+Without email, sign-up still works, but confirmations, resets, approvals and inquiry emails don't send;
+Alan approves claims manually and sends invite links instead.
+
+## Still to build
+
+- Spotlight form: file uploads to a Railway volume, then wire to `GHL_WEBHOOK_SPOTLIGHT`
+- Database (Neon), schema, and data-driven listing/article routes
+- Login (Auth.js) and real dashboard persistence
+- Inquiry email delivery (Resend)
+- Review aggregation — see the constraint in the Tech Setup Plan

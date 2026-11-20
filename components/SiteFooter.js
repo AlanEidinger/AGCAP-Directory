@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { asset } from '../lib/config';
 
-const SERVICES = ['Land & Real Estate Brokers', 'Crop & Farm Insurance', 'Title & Escrow', 'Agricultural Appraisers', 'Water Rights & Attorneys'];
+const SERVICES = [['Land & Real Estate Brokers', 'land-brokers'], ['Agricultural & USDA Realtors', 'rural-realtors'], ['Crop & Farm Insurance', 'crop-insurance'], ['Title & Escrow', 'title-escrow'], ['Agricultural Appraisers', 'appraisers'], ['Water Rights & Attorneys', 'water-ag-attorneys']];
 const REGIONS = ['San Joaquin Valley', 'Central Coast', 'Sacramento Valley', 'Wine Country', 'Imperial Valley'];
 
 export default function SiteFooter() {
@@ -19,7 +19,7 @@ export default function SiteFooter() {
           </div>
           <div className="foot-col">
             <h4>Services</h4>
-            <ul>{SERVICES.map((s) => <li key={s}><Link href="/professionals">{s}</Link></li>)}</ul>
+            <ul>{SERVICES.map(([s, k]) => <li key={k}><Link href={`/professionals?specialty=${k}`}>{s}</Link></li>)}</ul>
           </div>
           <div className="foot-col">
             <h4>Regions</h4>
@@ -30,6 +30,7 @@ export default function SiteFooter() {
             <ul>
               <li><Link href="/professionals">Find an expert</Link></li>
               <li><Link href="/get-listed">List your business</Link></li>
+              <li><Link href="/account/login">Professional sign in</Link></li>
               <li><Link href="/articles">Articles &amp; guides</Link></li>
               <li><Link href="/contact">Contact</Link></li>
               <li><Link href="/about">About</Link></li>

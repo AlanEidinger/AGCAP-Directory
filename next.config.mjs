@@ -8,6 +8,8 @@ const nextConfig = {
   trailingSlash: false,
   poweredByHeader: false,
   reactStrictMode: true,
+  // Allows photo and cover uploads from the admin panel (images are capped at 3 MB).
+  experimental: { serverActions: { bodySizeLimit: '4mb' } },
 };
 
 export default nextConfig;

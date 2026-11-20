@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { asset } from '../lib/config';
 
 const SPECIALTIES = [
-  { t: 'Real Estate & Land Brokers', d: 'Buy & sell farmland', p: 'M3 21h18 M5 21V9l7-5 7 5v12 M9 21v-6h6v6' },
-  { t: 'Crop & Farm Insurance', d: 'Protect your operation', p: 'M12 3 5 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6l-7-3Z M9.5 12l1.8 1.8L15 10' },
-  { t: 'Title & Escrow', d: 'Land & ag closings', p: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z M14 3v5h5 M9 14l2 2 4-4' },
-  { t: 'Agricultural Appraisers', d: 'Certified land valuation', p: 'M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z M9 7h6 M9 11h6 M9 15h3' },
-  { t: 'Water Rights & Ag Attorneys', d: 'Legal & water counsel', p: 'M12 3v18 M7 7h10 M5 7 3 13a3 3 0 0 0 4 0L5 7Z M19 7l-2 6a3 3 0 0 0 4 0l-2-6Z M8 21h8' },
+  { t: 'Real Estate & Land Brokers', k: 'land-brokers', d: 'Buy & sell farmland', p: 'M3 21h18 M5 21V9l7-5 7 5v12 M9 21v-6h6v6' },
+  { t: 'Crop & Farm Insurance', k: 'crop-insurance', d: 'Protect your operation', p: 'M12 3 5 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6l-7-3Z M9.5 12l1.8 1.8L15 10' },
+  { t: 'Title & Escrow', k: 'title-escrow', d: 'Land & ag closings', p: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z M14 3v5h5 M9 14l2 2 4-4' },
+  { t: 'Agricultural Appraisers', k: 'appraisers', d: 'Certified land valuation', p: 'M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z M9 7h6 M9 11h6 M9 15h3' },
+  { t: 'Water Rights & Ag Attorneys', k: 'water-ag-attorneys', d: 'Legal & water counsel', p: 'M12 3v18 M7 7h10 M5 7 3 13a3 3 0 0 0 4 0L5 7Z M19 7l-2 6a3 3 0 0 0 4 0l-2-6Z M8 21h8' },
 ];
 
 const REGIONS = [
@@ -20,6 +20,8 @@ const REGIONS = [
   { r: 'Imperial Valley', c: ['El Centro', 'Brawley'] },
   { r: 'Sierra Foothills', c: ['Placerville', 'Auburn'] },
 ];
+
+const CITY_COUNTY = {"Fresno":"Fresno","Bakersfield":"Kern","Visalia":"Tulare","Hanford":"Kings","Madera":"Madera"};
 
 const PinIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
@@ -69,6 +71,8 @@ export default function SiteHeader() {
             <Link href="/articles">Articles &amp; Guides</Link>
             <span className="u-divider"></span>
             <Link href="/get-listed">List your business</Link>
+            <span className="u-divider"></span>
+            <Link href="/account/login">Pro sign in</Link>
           </div>
         </div>
       </div>
@@ -114,7 +118,7 @@ export default function SiteHeader() {
               <p className="mega-col-label">By Specialty</p>
               <div className="mega-services">
                 {SPECIALTIES.map((s) => (
-                  <Link className="mega-service" href="/professionals" key={s.t}>
+                  <Link className="mega-service" href={s.k ? `/professionals?specialty=${s.k}` : '/professionals'} key={s.t}>
                     <span className="ms-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                         {s.p.split(' M').map((d, i) => <path d={i === 0 ? d : `M${d}`} key={i} />)}
@@ -133,7 +137,7 @@ export default function SiteHeader() {
                     <strong><PinIcon />{g.r}</strong>
                     <div className="cities">
                       {g.c.map((city) => (
-                        <Link className="city-chip" href="/professionals" key={city}>{city}</Link>
+                        <Link className="city-chip" href={CITY_COUNTY[city] ? `/professionals?county=${CITY_COUNTY[city]}` : '/professionals'} key={city}>{city}</Link>
                       ))}
                     </div>
                   </div>
